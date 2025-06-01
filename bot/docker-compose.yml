@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: whatsapp-bot
+    volumes:
+      - ./contatos.txt:/app/contatos.txt        # ← acesso externo ao arquivo
+      - ./sessions:/app/sessions                # ← persistência da sessão
+      - ./tokens:/app/tokens                    # ← persistência dos tokens
+    environment:
+      - DISPLAY=:99
+    ports:
+      - "5900:5900"  # Porta do VNC (se quiser acesso)
+    restart: unless-stopped

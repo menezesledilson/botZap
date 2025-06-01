@@ -1,0 +1,11 @@
+# Ignorar tokens, arquivos de sessão e configurações locais
+bot/tokens/
+
+.env
+*.log
+*.LOG
+*.old
+*.ldb
+*.tmp
+*.db
+SingletonCookie
