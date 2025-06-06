@@ -1,6 +1,5 @@
 # Ignorar tokens, arquivos de sessão e configurações locais
 bot/tokens/
-
 .env
 *.log
 *.LOG
@@ -8,4 +7,4 @@ bot/tokens/
 *.ldb
 *.tmp
 *.db
-SingletonCookie
+**/SingletonCookie

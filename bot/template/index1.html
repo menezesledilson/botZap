@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contatos</title>
+</head>
+<body>
+  <h2>📱 Contatos</h2>
+
+  <!-- Formulário para adicionar -->
+  <form method="POST" action="/adicionar">
+    <input type="text" name="nome" placeholder="Nome" required />
+    <input type="text" name="numero" placeholder="Número" required />
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <!-- Lista de contatos -->
+  <ul>
+    {% for contato in contatos %}
+      <li>
+        {{ contato[0] }} - {{ contato[1] }}
+        <form method="POST" action="/deletar" style="display:inline">
+          <input type="hidden" name="numero" value="{{ contato[1] }}">
+          <button type="submit">Excluir</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

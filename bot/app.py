@@ -1,37 +1,33 @@
 from WPP_Whatsapp import Create
+from db import numero_bloqueado
 import time
 import re
-import os
 
-# ✅ Função para carregar contatos proibidos (números formatados como no WhatsApp: ex: 553298389378)
-#def carregar_contatos_proibidos(caminho="D:\\bots\\Atendimento-Whatsapp-Python\\contatos.txt"):
+# Função para verificar se o contato está bloqueado
+def verificar_contato(numero):
+    if numero_bloqueado(numero):
+        print(f"🚫 Contato {numero} está na lista proibida. Ignorado.")
+        return True
+    return False
 
-def carregar_contatos_proibidos(caminho=r"D:\bots\bot\contatos.txt"):
+# Carrega contatos proibidos de arquivo (não usado atualmente)
+def carregar_contatos_proibidos(caminho="banco/contatos.db"):    
     contatos = set()
     try:
         with open(caminho, "r", encoding="utf-8") as arquivo:
             for linha in arquivo:
                 linha = linha.strip()
                 if linha:
-                    numero_normalizado = re.sub(r'\D', '', linha)  # Remove tudo que não for número
+                    numero_normalizado = re.sub(r'\D', '', linha)
                     if numero_normalizado:
                         contatos.add(numero_normalizado)
     except FileNotFoundError:
         print(f"⚠️ Arquivo '{caminho}' não encontrado.")
     return contatos
 
-# Carrega contatos proibidos ao iniciar o bot
-#contatos_proibidos = carregar_contatos_proibidos()
-# Função que sempre retorna a versão atualizada do arquivo
-
-def get_contatos_proibidos():
-    return carregar_contatos_proibidos()
-
-
 # Criação da sessão do WhatsApp
 your_session_name = "test"
 creator = Create(session=your_session_name, headless=False)
-
 client = creator.start()
 
 print("🔄 Aguardando conexão com o WhatsApp...")
@@ -42,19 +38,15 @@ if creator.state != 'CONNECTED':
 
 print("✅ Conectado ao WhatsApp com sucesso!")
 
-# Marca o momento de início do bot
 start_time = int(time.time())
-
-# Contexto por usuário
 contextos_usuario = {}
 
-# Menu principal
 menu_msg = (
     "Olá! 👋 Seja muito bem-vindo ao nosso atendimento automático.\n\n"
     "Por favor, escolha uma das opções abaixo para que eu possa ajudar você:\n"
     "1️⃣ - Atendimento Pier (Life)\n"
     "2️⃣ - Atendimento Arthur (Benvita)\n"
-    "3️⃣ - Suporte de Informática (Ledir)\n\n"
+    "3️⃣ - Suporte de Técnico\n\n"
     "_Digite o número da opção que deseja._"
 )
 
@@ -76,16 +68,16 @@ respostas_fixas = {
         "📌 Se seu assunto for outro, envie uma breve descrição para que possamos direcionar melhor o seu atendimento."
     ),
     "3": (
-        "💻 Setor de Informática:\n"
-        "Se precisar de ajuda com sistemas ou algum problema técnico, por favor, explique sua situação para que possamos ajudar."
+        "🛠 Suporte Técnico (T.I.)\n"
+        "Para atendimento direto com nosso suporte de tecnologia, entre em contato pelo número abaixo:\n"
+        "📞 (32) 9844-3282\n"
+        "Ou clique aqui: wa.me/553298443282"
     ),
 }
 
-# Função chamada sempre que uma nova mensagem é recebida
 def new_message(message):
     global client, contextos_usuario
 
-    # Ignora mensagens antigas (enviadas antes do script iniciar)
     msg_timestamp = message.get("t")
     if msg_timestamp and msg_timestamp < start_time:
         print("⏳ Mensagem antiga ignorada.")
@@ -93,9 +85,10 @@ def new_message(message):
 
     chat_id = message.get("from")
     numero = chat_id.split('@')[0]
+    numero = re.sub(r'\D', '', numero)  # Remove qualquer caractere que não seja número
 
-    if numero in get_contatos_proibidos():
-        print(f"🚫 Contato {numero} está na lista proibida. Mensagem ignorada.")
+
+    if verificar_contato(numero):
         return
 
     print("📩 Mensagem recebida:", message)
@@ -105,28 +98,24 @@ def new_message(message):
         texto_usuario = message.get("body").strip().lower()
         agora = int(time.time())
 
-        # Resetar o contexto
         if texto_usuario in ["0", "voltar"]:
             contextos_usuario.pop(chat_id, None)
             contextos_usuario[chat_id] = {"ultimo_menu": agora}
             client.reply(chat_id, "Você voltou ao menu principal.\n\n" + menu_msg, message_id)
             return
 
-        # Encerrar conversa
-        if texto_usuario in ["ok", "obrigado"]:
+        if texto_usuario in ["4", "obrigado"]:
             contextos_usuario.pop(chat_id, None)
             client.reply(chat_id, "Encerrando atendimento. Até logo! 👋", message_id)
             return
 
         contexto = contextos_usuario.get(chat_id, {})
 
-        # Usuário ainda não escolheu setor
         if "setor" not in contexto:
             ultimo_menu = contexto.get("ultimo_menu")
             tempo_passado = (agora - ultimo_menu) if ultimo_menu else None
 
             if texto_usuario in respostas_fixas:
-                # Usuário escolheu um setor válido
                 contextos_usuario[chat_id] = {
                     "setor": texto_usuario,
                     "em_conversa": False
@@ -134,8 +123,7 @@ def new_message(message):
                 client.reply(chat_id, respostas_fixas[texto_usuario] + "\n\nDigite sua dúvida ou escreva *0* para retornar ao menu.", message_id)
                 return
 
-            # Se nunca viu o menu ou já passaram 12 horas
-            if not ultimo_menu or tempo_passado >= 43200:
+            if not ultimo_menu or tempo_passado >= 43200:#enviar o menu 12 horas depois
                 contextos_usuario[chat_id] = {
                     "ultimo_menu": agora
                 }
@@ -143,7 +131,6 @@ def new_message(message):
             else:
                 print(f"⏱ Menu não reenviado. Apenas {tempo_passado // 60} min desde o último envio.")
         else:
-            # Já escolheu setor, responde conforme a lógica atual
             if not contexto.get("em_conversa"):
                 setor = contexto.get("setor")
                 if setor == "1":
@@ -153,18 +140,15 @@ def new_message(message):
                 elif setor == "3":
                     resposta = "📌 Informática: Sua solicitação foi registrada. Um técnico responderá em breve."
                 else:
-                    resposta = "📌 Sua mensagem foi registrada. Um atendente responderá em breve."
-
+                    resposta = "Opção inválida. Por favor, digite *0* para voltar ao menu."
                 contextos_usuario[chat_id]["em_conversa"] = True
-                client.reply(chat_id, resposta + "\n\n(_Digite *0* para retornar ao menu ou *4* para encerrar._)", message_id)
+                client.reply(chat_id, resposta + "\n\n(_Digite *0* para retornar ao menu._)", message_id)
             else:
                 print(f"💬 [{chat_id}] Mensagem do usuário em conversa: {texto_usuario}")
 
-# Iniciar escuta
 creator.client.onMessage(new_message)
 
 print("🤖 Bot do WhatsApp está rodando...")
 
-# Mantém o script ativo
 while True:
     time.sleep(1)

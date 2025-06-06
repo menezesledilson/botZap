@@ -12,4 +12,5 @@ services:
       - DISPLAY=:99
     ports:
       - "5900:5900"  # Porta do VNC (se quiser acesso)
+      - "5000:5000"   # para acessar a API HTTP externa
     restart: unless-stopped

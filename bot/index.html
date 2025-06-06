@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contatos</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    /* Estilo básico só pra ficar melhor visualmente */
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+    input { margin: 5px 0; padding: 8px; width: 100%; box-sizing: border-box; }
+    button { padding: 8px 15px; cursor: pointer; }
+    ul { padding-left: 0; list-style: none; }
+    li { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h2>📱 Contatos</h2>
+
+  <form id="form-adicionar">
+    <input type="text" id="nome" placeholder="Nome" required />
+    <input type="text" id="numero" placeholder="Número" required />
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <ul id="lista-contatos"></ul>
+
+  <script>
+    const apiBase = 'http://localhost:5000'; // ajuste conforme backend
+
+    function listarContatos() {
+      axios.get(`${apiBase}/contatos`)
+        .then(res => {
+          const lista = document.getElementById('lista-contatos');
+          lista.innerHTML = '';
+          res.data.forEach(contato => {
+            const li = document.createElement('li');
+            li.textContent = `${contato.nome} - ${contato.numero} `;
+
+            const btnExcluir = document.createElement('button');
+            btnExcluir.textContent = 'Excluir';
+            btnExcluir.style.marginLeft = '10px';
+            btnExcluir.onclick = () => excluirContato(contato.numero);
+
+            li.appendChild(btnExcluir);
+            lista.appendChild(li);
+          });
+        })
+        .catch(err => {
+          console.error('Erro ao buscar contatos:', err);
+        });
+    }
+
+    function adicionarContato(nome, numero) {
+      axios.post(`${apiBase}/add-contato`, { nome, numero })
+        .then(() => {
+          listarContatos();
+          document.getElementById('form-adicionar').reset();
+        })
+        .catch(err => {
+          alert('Erro ao adicionar contato');
+          console.error(err);
+        });
+    }
+
+    function excluirContato(numero) {
+      axios.delete(`${apiBase}/contato`, { data: { numero } })
+        .then(() => {
+          listarContatos();
+        })
+        .catch(err => {
+          alert('Erro ao excluir contato');
+          console.error(err);
+        });
+    }
+
+    document.getElementById('form-adicionar').addEventListener('submit', e => {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value.trim();
+      const numero = document.getElementById('numero').value.trim();
+      if (nome && numero) {
+        adicionarContato(nome, numero);
+      }
+    });
+
+    // Carrega a lista ao abrir a página
+    listarContatos();
+  </script>
+</body>
+</html>
